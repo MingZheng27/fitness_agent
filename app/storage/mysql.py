@@ -1,12 +1,13 @@
+import logging
 import mysql.connector
 from mysql.connector import Error
 from typing import Optional, List, Dict, Any
 from app.config import get_settings
 import uuid
 from datetime import datetime
-
-
 import json
+
+logger = logging.getLogger(__name__)
 
 
 class MySQLClient:
@@ -15,15 +16,19 @@ class MySQLClient:
         self._connection = None
 
     def get_connection(self):
-        if self._connection is None or not self._connection.is_connected():
-            self._connection = mysql.connector.connect(
-                host=self.settings.mysql_host,
-                port=self.settings.mysql_port,
-                user=self.settings.mysql_user,
-                password=self.settings.mysql_password,
-                database=self.settings.mysql_database
-            )
-        return self._connection
+        try:
+            if self._connection is None or not self._connection.is_connected():
+                self._connection = mysql.connector.connect(
+                    host=self.settings.mysql_host,
+                    port=self.settings.mysql_port,
+                    user=self.settings.mysql_user,
+                    password=self.settings.mysql_password,
+                    database=self.settings.mysql_database
+                )
+            return self._connection
+        except Error as e:
+            logger.error(f"MySQL connection failed: {e}")
+            raise
 
     def init_tables(self):
         conn = self.get_connection()

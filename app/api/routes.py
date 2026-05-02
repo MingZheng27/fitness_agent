@@ -1,8 +1,11 @@
+import logging
 from fastapi import APIRouter, HTTPException
 from typing import Optional
 from datetime import datetime
 import uuid
 import json
+
+logger = logging.getLogger(__name__)
 
 from app.api.schemas import (
     UserRegisterRequest, UserRegisterResponse,
@@ -134,9 +137,10 @@ async def record_diet(req: DietRecordRequest):
 
 @router.post("/chat", response_model=ChatResponse)
 async def chat(req: ChatRequest):
-    try:
-        conversation_id = req.conversation_id or str(uuid.uuid4())
+    conversation_id = req.conversation_id or str(uuid.uuid4())
+    logger.info(f"[Chat] user_id={req.user_id} conversation_id={conversation_id} message={req.message[:50]}")
 
+    try:
         # Create short-term memory for this conversation
         short_memory = ShortTermMemory()
         short_memory.add_message("user", req.message)
@@ -160,6 +164,7 @@ async def chat(req: ChatRequest):
             config=InvokeConfig(recursion_limit=50)
         )
 
+        logger.info(f"[Chat] user_id={req.user_id} conversation_id={conversation_id} response_generated")
         return ChatResponse(
             response=result.get("response", "抱歉，我无法处理您的请求"),
             recommendations=result.get("recommendations", {}),
@@ -167,6 +172,7 @@ async def chat(req: ChatRequest):
             conversation_id=conversation_id
         )
     except Exception as e:
+        logger.error(f"[Chat] user_id={req.user_id} conversation_id={conversation_id} error={e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 
@@ -212,6 +218,8 @@ async def update_preferences(user_id: str, req: UpdatePreferencesRequest):
         fitness_goals = json.dumps(req.fitness_goals) if req.fitness_goals else "[]"
         constraints = json.dumps(req.constraints) if req.constraints else "{}"
 
+        logger.info(f"[UpdatePreferences] user_id={user_id} fields=exercise:{bool(req.exercise_preferences)} diet:{bool(req.diet_preferences)}")
+
         success = mysql_client.update_user_preferences(
             user_id=user_id,
             exercise_preferences=exercise_prefs,
@@ -233,11 +241,15 @@ async def update_preferences(user_id: str, req: UpdatePreferencesRequest):
         if req.constraints:
             updated_fields.append("constraints")
 
+        logger.info(f"[UpdatePreferences] user_id={user_id} success fields={updated_fields}")
         return UpdatePreferencesResponse(
             user_id=user_id,
             message="用户偏好更新成功",
             updated_fields=updated_fields,
             updated_at=datetime.now()
         )
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"[UpdatePreferences] user_id={user_id} error={e}")
         raise HTTPException(status_code=400, detail=str(e))

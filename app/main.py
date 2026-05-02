@@ -1,6 +1,17 @@
+import logging
+import sys
 from fastapi import FastAPI
 from app.api.routes import router
 from app.storage.mysql import mysql_client
+
+logger = logging.getLogger(__name__)
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
 
 app = FastAPI(title="Fitness Recommendation Agent")
 
@@ -10,12 +21,11 @@ app.include_router(router, prefix="/api/v1")
 
 @app.on_event("startup")
 async def startup_event():
-    # Initialize MySQL tables
     try:
         mysql_client.init_tables()
-        print("MySQL tables initialized")
+        logger.info("MySQL tables initialized successfully")
     except Exception as e:
-        print(f"Warning: MySQL initialization failed: {e}")
+        logger.error(f"MySQL initialization failed: {e}")
 
 
 @app.get("/health")

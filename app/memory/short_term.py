@@ -1,6 +1,9 @@
+import logging
 from typing import List, Dict, Any
 from langchain_core.messages import BaseMessage
 from app.config import get_settings
+
+logger = logging.getLogger(__name__)
 
 
 class ShortTermMemory:
@@ -14,9 +17,11 @@ class ShortTermMemory:
         self.messages.append({"role": role, "content": content})
         if len(self.messages) > self.max_size:
             self.messages.pop(0)
+        logger.debug(f"[ShortTermMemory] message added role={role} total={len(self.messages)}")
 
     def add_context(self, key: str, value: Any):
         self.recent_context[key] = value
+        logger.debug(f"[ShortTermMemory] context updated key={key}")
 
     def get_messages(self) -> List[Dict[str, Any]]:
         return self.messages
