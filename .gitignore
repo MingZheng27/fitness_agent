@@ -9,3 +9,5 @@ chroma_data/
 
 # Virtual environments
 .venv
+
+config.yaml

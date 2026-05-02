@@ -1,0 +1,22 @@
+# 数据库配置
+mysql:
+  host: "localhost"
+  port: 3306
+  user: "root"
+  password: ""  # 请修改为你的MySQL密码
+  database: "fitness_agent"
+
+# 向量数据库配置
+chroma:
+  path: "./chroma_data"
+
+# LLM配置
+llm:
+  base_url: "https://api.minimax.chat/v1"
+  api_key: ""  # 请修改为你的MiniMax API Key
+  model: "MiniMax-M2.7"
+  temperature: 0.2
+
+# Agent配置
+agent:
+  short_term_memory_size: 10

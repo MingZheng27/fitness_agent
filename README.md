@@ -46,6 +46,18 @@ fitness_agent/
 - MySQL 8.0+
 - Homebrew (macOS)
 
+### 快速开始 (使用 setup.sh)
+
+```bash
+cd fitness_agent
+./setup.sh
+# 根据提示编辑 config.yaml 填入真实配置
+vim config.yaml
+# 启动服务
+source .venv/bin/activate
+python -m app.main
+```
+
 ### 1. MySQL 安装与启动
 
 ```bash
@@ -98,17 +110,22 @@ python -m app.main
 
 ## 配置说明
 
-配置文件: `app/config.py`
+配置文件: `config.yaml` (由 `config.yaml.example` 复制生成)
+
+首次运行需执行 `./setup.sh` 生成配置文件。
 
 | 配置项 | 默认值 | 说明 |
 |--------|--------|------|
-| `mysql_host` | localhost | MySQL主机 |
-| `mysql_port` | 3306 | MySQL端口 |
-| `mysql_user` | root | MySQL用户名 |
-| `mysql_password` | (empty) | MySQL密码 |
-| `mysql_database` | fitness_agent | 数据库名 |
-| `chroma_path` | ./chroma_data | ChromaDB数据目录 |
-| `llm_api_key` | 环境变量MINIMAX_API_KEY | LLM API密钥 |
+| `mysql.host` | localhost | MySQL主机 |
+| `mysql.port` | 3306 | MySQL端口 |
+| `mysql.user` | root | MySQL用户名 |
+| `mysql.password` | (empty) | MySQL密码 |
+| `mysql.database` | fitness_agent | 数据库名 |
+| `chroma.path` | ./chroma_data | ChromaDB数据目录 |
+| `llm.base_url` | https://api.minimax.chat/v1 | LLM API地址 |
+| `llm.api_key` | (empty) | MiniMax API密钥 |
+| `llm.model` | MiniMax-M2.7 | LLM模型 |
+| `agent.short_term_memory_size` | 10 | 短期记忆保留条数 |
 
 ## 数据隔离
 
