@@ -14,6 +14,7 @@ class AgentState(TypedDict):
     response: str
     sources: List[str]
     recent_context: dict
+    next_node: str
 
 
 def create_agent_graph():
@@ -42,7 +43,7 @@ def create_agent_graph():
     # Router decides the next step - conditional routing
     graph.add_conditional_edges(
         "router",
-        lambda x: x,
+        lambda x: x.get("next_node", "quick_answer"),
         {
             "exercise_recommendation": "get_user_profile",
             "diet_recommendation": "get_user_profile",

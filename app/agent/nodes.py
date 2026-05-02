@@ -22,11 +22,11 @@ from app.agent.prompts import (
 logger = logging.getLogger(__name__)
 
 
-def router(state: Dict[str, Any]) -> str:
+def router(state: Dict[str, Any]) -> Dict[str, str]:
     """Route the user query to appropriate handler"""
     messages = state.get("messages", [])
     if not messages:
-        return "quick_answer"
+        return {"next_node": "quick_answer"}
 
     last_message = messages[-1]
     content = last_message.content.lower() if hasattr(last_message, 'content') else str(last_message).lower()
@@ -44,7 +44,9 @@ def router(state: Dict[str, Any]) -> str:
         route = "general_conversation"
 
     logger.info(f"[Router] user_id={state.get('user_id')} -> route={route}, content={content[:50]}")
-    return route
+    # Directly set next_node in state
+    state["next_node"] = route
+    return {"next_node": route}
 
 
 def get_user_profile_node(state: Dict[str, Any]) -> Dict[str, Any]:
@@ -89,12 +91,23 @@ def generate_recommendation_node(state: Dict[str, Any]) -> Dict[str, Any]:
 
     logger.info(f"[GenerateRecommendation] user_id={user_id} profile_loaded={bool(profile)}")
 
+    if not profile or "error" in profile:
+        logger.warning(f"[GenerateRecommendation] user_id={user_id} profile not available")
+        return {
+            "response": "无法获取用户信息，请确认用户已注册",
+            "recommendations": {},
+            "sources": exercise_history + diet_history
+        }
+
     try:
         # Get recovery status
         recovery = get_recovery_status(user_id)
 
         # Calculate recommended calories
         calories = calculate_recommended_calories(user_id)
+        if "error" in calories:
+            logger.warning(f"[GenerateRecommendation] calories calculation failed: {calories['error']}")
+            calories = {"recommended_calories": 2000, "bmr": 1500, "tdee": 2325, "message": "默认推荐值"}
 
         # Generate exercise plan based on recovery status
         recommended_intensity = recovery.get("recommended_intensity", 5)
@@ -117,7 +130,7 @@ def generate_recommendation_node(state: Dict[str, Any]) -> Dict[str, Any]:
         }
 
         response = format_recommendation_response({
-            "exercise_type": exercise_plan["type"],
+            "exercise_type": exercise_plan["exercise_type"],
             "duration": exercise_plan["duration"],
             "intensity": exercise_plan["intensity"],
             "reason": exercise_plan["reason"],

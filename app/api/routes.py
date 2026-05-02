@@ -146,7 +146,8 @@ async def chat(req: ChatRequest):
         short_memory.add_message("user", req.message)
 
         # Run agent graph
-        from langgraph.constants import InvokeConfig
+        from app.config import get_settings
+        settings = get_settings()
 
         result = agent_graph.invoke(
             {
@@ -160,8 +161,7 @@ async def chat(req: ChatRequest):
                 "response": "",
                 "sources": [],
                 "recent_context": {}
-            },
-            config=InvokeConfig(recursion_limit=50)
+            }
         )
 
         logger.info(f"[Chat] user_id={req.user_id} conversation_id={conversation_id} response_generated")

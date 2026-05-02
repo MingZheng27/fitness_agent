@@ -2,7 +2,6 @@ import logging
 from typing import Dict, Any, List
 from datetime import datetime
 from app.storage import mysql_client, chroma_client
-from app.api.schemas import ExerciseType
 import json
 
 logger = logging.getLogger(__name__)

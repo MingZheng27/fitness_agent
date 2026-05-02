@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # Agent
     short_term_memory_size: int = 10
+    langgraph_recursion_limit: int = 50
 
     @property
     def mysql_url(self) -> str:
@@ -59,6 +60,7 @@ class Settings(BaseSettings):
             self.llm_temperature = config["llm"].get("temperature", self.llm_temperature)
         if "agent" in config:
             self.short_term_memory_size = config["agent"].get("short_term_memory_size", self.short_term_memory_size)
+            self.langgraph_recursion_limit = config["agent"].get("langgraph_recursion_limit", self.langgraph_recursion_limit)
 
 
 @lru_cache()

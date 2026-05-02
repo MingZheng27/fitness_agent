@@ -20,3 +20,4 @@ llm:
 # Agent配置
 agent:
   short_term_memory_size: 10
+  langgraph_recursion_limit: 50  # LangGraph最大递归深度
