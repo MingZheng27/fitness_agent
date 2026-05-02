@@ -161,7 +161,8 @@ async def chat(req: ChatRequest):
                 "response": "",
                 "sources": [],
                 "recent_context": {}
-            }
+            },
+            config={"recursion_limit": settings.langgraph_recursion_limit}
         )
 
         logger.info(f"[Chat] user_id={req.user_id} conversation_id={conversation_id} response_generated")
