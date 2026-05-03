@@ -45,7 +45,14 @@ fitness_agent/
 - MySQL 8.0+
 - Homebrew (macOS)
 
-### 1. MySQL 安装与启动
+### 方式1:使用配置脚本
+```bash
+# 创建配置文件，并且创建python虚拟环境和mysql环境
+sh setup.sh
+```
+
+### 方式2:自己配置
+#### 1. MySQL 安装与启动
 
 ```bash
 # 安装 MySQL
@@ -58,7 +65,7 @@ brew services start mysql
 mysql -u root -e "CREATE DATABASE IF NOT EXISTS fitness_agent;"
 ```
 
-### 2. 安装依赖
+#### 2. 安装依赖
 
 ```bash
 cd fitness_agent
@@ -67,7 +74,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-### 3. 配置
+#### 3. 配置
 
 复制配置文件并编辑：
 
@@ -76,13 +83,13 @@ cp config.yaml.example config.yaml
 vim config.yaml
 ```
 
-### 4. 设置环境变量（如使用 MiniMax LLM）
+#### 4. 设置环境变量（如使用 MiniMax LLM）
 
 ```bash
 export MINIMAX_API_KEY="your_api_key_here"
 ```
 
-### 5. 启动服务
+#### 5. 启动服务
 
 ```bash
 source .venv/bin/activate
