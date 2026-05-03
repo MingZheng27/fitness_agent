@@ -12,3 +12,4 @@ chroma_data
 .venv
 
 config.yaml
+server.log

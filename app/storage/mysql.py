@@ -217,9 +217,9 @@ class MySQLClient:
 
         cursor.close()
         return {
-            "total_exercises": exercise_stats["total_exercises"],
-            "total_calories_burned": exercise_stats["total_calories"],
-            "total_meals": diet_stats["total_meals"]
+            "total_exercises": int(exercise_stats["total_exercises"]) if exercise_stats["total_exercises"] else 0,
+            "total_calories_burned": float(exercise_stats["total_calories"]) if exercise_stats["total_calories"] else 0.0,
+            "total_meals": int(diet_stats["total_meals"]) if diet_stats["total_meals"] else 0
         }
 
 

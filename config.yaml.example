@@ -21,3 +21,4 @@ llm:
 agent:
   short_term_memory_size: 10
   langgraph_recursion_limit: 50  # LangGraph最大递归深度
+  llm_max_iterations： 10 # LLM工具调用最大迭代次数

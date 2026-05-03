@@ -16,7 +16,6 @@ from .tools import (
     generate_exercise_plan,
     generate_diet_recommendation
 )
-from .prompts import SYSTEM_PROMPT
 
 __all__ = [
     "agent_graph",
@@ -33,5 +32,4 @@ __all__ = [
     "calculate_recommended_calories",
     "generate_exercise_plan",
     "generate_diet_recommendation",
-    "SYSTEM_PROMPT"
 ]

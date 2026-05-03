@@ -41,7 +41,8 @@ class ChromaDBClient:
             collection = self.get_collection(user_id)
             results = collection.query(
                 query_texts=[query],
-                n_results=n_results
+                n_results=n_results,
+                where={"user_id": user_id}
             )
             logger.info(f"[ChromaDB] search user_id={user_id} query={query[:30]} results={len(results.get('documents', [[]])[0])}")
             return results
