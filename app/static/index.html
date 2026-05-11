@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fitness Agent Web</title>
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div id="app" class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <p class="eyebrow">Fitness Agent</p>
+        <h1>健康管理控制台</h1>
+        <p class="brand-copy">围绕用户注册、记录沉淀、画像管理与智能对话的一体化工作台。</p>
+      </div>
+
+      <div class="user-card">
+        <label for="active-user-id">当前用户 ID</label>
+        <input id="active-user-id" v-model.trim="activeUserId" placeholder="注册后自动填充，或手动粘贴">
+        <button class="secondary" @click="loadProfile" :disabled="loading.profile">加载用户画像</button>
+      </div>
+
+      <nav class="nav-list">
+        <button
+          v-for="tab in tabs"
+          :key="tab.key"
+          class="nav-item"
+          :class="{ active: activeTab === tab.key }"
+          @click="activeTab = tab.key"
+        >
+          <span>{{ tab.label }}</span>
+          <small>{{ tab.desc }}</small>
+        </button>
+      </nav>
+    </aside>
+
+    <main class="main-panel">
+      <header class="hero">
+        <div>
+          <p class="eyebrow">Web Console</p>
+          <h2>{{ currentTab.label }}</h2>
+          <p>{{ currentTab.desc }}</p>
+        </div>
+        <div class="hero-actions">
+          <button @click="seedTenantId">生成租户 ID</button>
+          <button class="secondary" @click="startNewConversation">新建会话</button>
+        </div>
+      </header>
+
+      <section v-if="feedback.message" class="feedback" :class="feedback.type">
+        <strong>{{ feedback.type === 'error' ? '请求失败' : '操作成功' }}</strong>
+        <span>{{ feedback.message }}</span>
+      </section>
+
+      <section class="stats-grid">
+        <article class="stat-card">
+          <span>运动记录</span>
+          <strong>{{ profile.stats.total_exercises || 0 }}</strong>
+        </article>
+        <article class="stat-card">
+          <span>消耗热量</span>
+          <strong>{{ profile.stats.total_calories_burned || 0 }}</strong>
+        </article>
+        <article class="stat-card">
+          <span>饮食记录</span>
+          <strong>{{ profile.stats.total_meals || 0 }}</strong>
+        </article>
+        <article class="stat-card">
+          <span>最近运动</span>
+          <strong>{{ profile.recent_summary.last_exercise || '暂无' }}</strong>
+        </article>
+      </section>
+
+      <section v-show="activeTab === 'register'" class="content-card">
+        <div class="section-head">
+          <h3>用户注册</h3>
+          <p>创建基础档案，作为后续运动、饮食和推荐的上下文。</p>
+        </div>
+        <div class="form-grid two-col">
+          <label>
+            <span>租户 ID</span>
+            <input v-model.trim="registerForm.tenant_id" placeholder="UUID">
+          </label>
+          <label>
+            <span>用户名</span>
+            <input v-model.trim="registerForm.username" placeholder="例如：张三">
+          </label>
+          <label>
+            <span>年龄</span>
+            <input v-model.number="registerForm.age" type="number" min="1">
+          </label>
+          <label>
+            <span>性别</span>
+            <select v-model="registerForm.gender">
+              <option value="male">male</option>
+              <option value="female">female</option>
+              <option value="other">other</option>
+            </select>
+          </label>
+          <label>
+            <span>身高(cm)</span>
+            <input v-model.number="registerForm.height" type="number" min="1">
+          </label>
+          <label>
+            <span>体重(kg)</span>
+            <input v-model.number="registerForm.weight" type="number" min="1" step="0.1">
+          </label>
+          <label class="full">
+            <span>健身目标（逗号分隔）</span>
+            <input v-model.trim="registerGoalsText" placeholder="weight_loss,strength,endurance">
+          </label>
+          <label class="full">
+            <span>约束条件 JSON</span>
+            <textarea v-model="registerConstraintsText" rows="5" placeholder='{"injury_history":[],"available_time":"weekday_evening"}'></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button @click="registerUser" :disabled="loading.register">提交注册</button>
+        </div>
+      </section>
+
+      <section v-show="activeTab === 'exercise'" class="content-card">
+        <div class="section-head">
+          <h3>运动记录</h3>
+          <p>把训练行为沉淀到 MySQL 和长期记忆，供 Agent 做后续建议。</p>
+        </div>
+        <div class="form-grid two-col">
+          <label>
+            <span>日期</span>
+            <input v-model="exerciseForm.date" type="date">
+          </label>
+          <label>
+            <span>运动类型</span>
+            <select v-model.number="exerciseForm.exercise_type">
+              <option v-for="item in exerciseOptions" :key="item.value" :value="item.value">{{ item.label }}</option>
+            </select>
+          </label>
+          <label>
+            <span>时长(分钟)</span>
+            <input v-model.number="exerciseForm.duration_minutes" type="number" min="0">
+          </label>
+          <label>
+            <span>强度(1-10)</span>
+            <input v-model.number="exerciseForm.intensity" type="number" min="1" max="10">
+          </label>
+          <label>
+            <span>消耗热量</span>
+            <input v-model.number="exerciseForm.calories_burned" type="number" min="0">
+          </label>
+          <label>
+            <span>恢复状态</span>
+            <select v-model="exerciseForm.recovery_status">
+              <option value="normal">normal</option>
+              <option value="good">good</option>
+              <option value="tired">tired</option>
+              <option value="sore">sore</option>
+            </select>
+          </label>
+          <label class="full">
+            <span>备注</span>
+            <textarea v-model.trim="exerciseForm.notes" rows="4" placeholder="例如：今天跑步后小腿略酸"></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button @click="submitExercise" :disabled="loading.exercise">保存运动记录</button>
+        </div>
+      </section>
+
+      <section v-show="activeTab === 'diet'" class="content-card">
+        <div class="section-head">
+          <h3>饮食记录</h3>
+          <p>按餐次记录食物组成与营养信息，为推荐和 RAG 检索提供依据。</p>
+        </div>
+        <div class="form-grid two-col">
+          <label>
+            <span>日期</span>
+            <input v-model="dietForm.date" type="date">
+          </label>
+          <label>
+            <span>餐次</span>
+            <select v-model="dietForm.meal_type">
+              <option value="breakfast">breakfast</option>
+              <option value="lunch">lunch</option>
+              <option value="dinner">dinner</option>
+              <option value="snack">snack</option>
+            </select>
+          </label>
+          <label>
+            <span>总热量</span>
+            <input v-model.number="dietForm.calories" type="number" min="0">
+          </label>
+          <label class="full">
+            <span>食物列表</span>
+            <textarea v-model="dietFoodsText" rows="5" placeholder="鸡胸肉|150g&#10;糙米|1碗&#10;西兰花|100g"></textarea>
+          </label>
+          <label class="full">
+            <span>营养信息 JSON</span>
+            <textarea v-model="dietNutrientsText" rows="5" placeholder='{"protein":35,"carbs":48,"fat":12}'></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button @click="submitDiet" :disabled="loading.diet">保存饮食记录</button>
+        </div>
+      </section>
+
+      <section v-show="activeTab === 'profile'" class="content-card">
+        <div class="section-head">
+          <h3>用户画像管理</h3>
+          <p>查看当前用户档案、统计信息，并更新基础画像字段。</p>
+        </div>
+        <div class="form-grid two-col">
+          <label>
+            <span>用户名</span>
+            <input v-model.trim="profileForm.username">
+          </label>
+          <label>
+            <span>年龄</span>
+            <input v-model.number="profileForm.age" type="number" min="1">
+          </label>
+          <label>
+            <span>性别</span>
+            <select v-model="profileForm.gender">
+              <option value="male">male</option>
+              <option value="female">female</option>
+              <option value="other">other</option>
+            </select>
+          </label>
+          <label>
+            <span>身高(cm)</span>
+            <input v-model.number="profileForm.height" type="number" min="1">
+          </label>
+          <label>
+            <span>体重(kg)</span>
+            <input v-model.number="profileForm.weight" type="number" min="1" step="0.1">
+          </label>
+          <label class="full">
+            <span>健身目标（逗号分隔）</span>
+            <input v-model.trim="profileGoalsText">
+          </label>
+          <label class="full">
+            <span>约束条件 JSON</span>
+            <textarea v-model="profileConstraintsText" rows="5"></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button class="secondary" @click="loadProfile" :disabled="loading.profile">刷新画像</button>
+          <button @click="saveProfile" :disabled="loading.profileSave">更新画像</button>
+        </div>
+      </section>
+
+      <section v-show="activeTab === 'preferences'" class="content-card">
+        <div class="section-head">
+          <h3>用户偏好管理</h3>
+          <p>通过结构化 JSON 维护运动偏好、饮食偏好、目标和限制条件。</p>
+        </div>
+        <div class="form-grid">
+          <label>
+            <span>运动偏好 JSON</span>
+            <textarea v-model="preferencesForm.exercise_preferences" rows="6" placeholder='{"favorite_types":["running","yoga"],"weekly_frequency":4}'></textarea>
+          </label>
+          <label>
+            <span>饮食偏好 JSON</span>
+            <textarea v-model="preferencesForm.diet_preferences" rows="6" placeholder='{"allergies":["peanut"],"preferred_style":"high_protein"}'></textarea>
+          </label>
+          <label>
+            <span>健身目标（逗号分隔）</span>
+            <input v-model.trim="preferencesForm.fitness_goals_text" placeholder="weight_loss,endurance">
+          </label>
+          <label>
+            <span>限制条件 JSON</span>
+            <textarea v-model="preferencesForm.constraints" rows="5" placeholder='{"available_time":"weekend_morning"}'></textarea>
+          </label>
+        </div>
+        <div class="actions">
+          <button @click="savePreferences" :disabled="loading.preferences">更新偏好</button>
+        </div>
+      </section>
+
+      <section v-show="activeTab === 'chat'" class="content-card chat-card">
+        <div class="section-head">
+          <h3>Agent 对话</h3>
+          <p>结合用户画像、历史记录和长期记忆，生成个性化运动与饮食建议。</p>
+        </div>
+        <div class="chat-window">
+          <article v-for="(item, index) in chatMessages" :key="index" class="chat-bubble" :class="item.role">
+            <header>{{ item.role === 'user' ? '你' : 'Agent' }}</header>
+            <p>{{ item.content }}</p>
+            <pre v-if="item.meta">{{ item.meta }}</pre>
+          </article>
+          <div v-if="!chatMessages.length" class="chat-empty">输入问题后，这里会显示对话与推荐结果。</div>
+        </div>
+        <div class="chat-compose">
+          <textarea v-model.trim="chatInput" rows="4" placeholder="例如：我今天跑了 5 公里，明天适合做什么运动？"></textarea>
+          <div class="actions">
+            <button @click="sendChat" :disabled="loading.chat">发送消息</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>

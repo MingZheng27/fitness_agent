@@ -13,6 +13,7 @@ from app.api.schemas import (
     DietRecordRequest, DietRecordResponse,
     ChatRequest, ChatResponse,
     UserProfileResponse,
+    UpdateUserProfileRequest, UpdateUserProfileResponse,
     UpdatePreferencesRequest, UpdatePreferencesResponse
 )
 from app.storage import mysql_client, chroma_client
@@ -179,8 +180,8 @@ async def chat(req: ChatRequest):
 
 @router.get("/user/profile", response_model=UserProfileResponse)
 async def get_profile(user_id: str):
-    from app.agent.tools import get_user_profile
-    profile = get_user_profile(user_id)
+    from app.agent.tools import fetch_user_profile
+    profile = fetch_user_profile(user_id)
 
     if "error" in profile:
         raise HTTPException(status_code=404, detail=profile["error"])
@@ -200,6 +201,7 @@ async def get_profile(user_id: str):
         height=profile["height"],
         weight=profile["weight"],
         fitness_goals=profile["fitness_goals"],
+        constraints=profile.get("constraints", {}),
         exercise_preferences=profile.get("exercise_preferences", {}),
         diet_preferences=profile.get("diet_preferences", {}),
         stats=profile.get("stats", {}),
@@ -209,6 +211,53 @@ async def get_profile(user_id: str):
             "weekly_goal_progress": 0.5
         }
     )
+
+
+@router.put("/user/profile", response_model=UpdateUserProfileResponse)
+async def update_profile(user_id: str, req: UpdateUserProfileRequest):
+    try:
+        logger.info(f"[UpdateProfile] user_id={user_id}")
+        success = mysql_client.update_user(
+            user_id=user_id,
+            username=req.username,
+            age=req.age,
+            gender=req.gender,
+            height=req.height,
+            weight=req.weight,
+            fitness_goals=req.fitness_goals,
+            constraints=req.constraints
+        )
+
+        if not success:
+            raise HTTPException(status_code=404, detail="用户不存在或更新失败")
+
+        updated_fields = []
+        if req.username is not None:
+            updated_fields.append("username")
+        if req.age is not None:
+            updated_fields.append("age")
+        if req.gender is not None:
+            updated_fields.append("gender")
+        if req.height is not None:
+            updated_fields.append("height")
+        if req.weight is not None:
+            updated_fields.append("weight")
+        if req.fitness_goals is not None:
+            updated_fields.append("fitness_goals")
+        if req.constraints is not None:
+            updated_fields.append("constraints")
+
+        return UpdateUserProfileResponse(
+            user_id=user_id,
+            message="用户画像更新成功",
+            updated_fields=updated_fields,
+            updated_at=datetime.now()
+        )
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[UpdateProfile] user_id={user_id} error={e}")
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.put("/user/preferences", response_model=UpdatePreferencesResponse)

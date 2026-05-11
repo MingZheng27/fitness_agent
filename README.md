@@ -111,8 +111,11 @@ python -m app.main
 | POST | `/api/v1/exercise/record` | 记录运动数据 |
 | POST | `/api/v1/diet/record` | 记录饮食数据 |
 | GET | `/api/v1/user/profile` | 获取用户画像 |
+| PUT | `/api/v1/user/profile` | 更新用户画像 |
 | PUT | `/api/v1/user/preferences` | 更新用户偏好 |
 | GET | `/health` | 健康检查 |
+
+启动服务后，可直接访问 `http://localhost:8000/` 使用内置 Web 控制台，包含用户注册、运动记录、饮食记录、用户画像管理、用户偏好管理和 Agent 对话能力。
 
 ---
 

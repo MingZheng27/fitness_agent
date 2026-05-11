@@ -120,10 +120,28 @@ class UserProfileResponse(BaseModel):
     height: float
     weight: float
     fitness_goals: List[str]
+    constraints: Dict[str, Any] = {}
     exercise_preferences: Dict[str, Any] = {}
     diet_preferences: Dict[str, Any] = {}
     stats: Dict[str, Any] = {}
     recent_summary: Dict[str, Any] = {}
+
+
+class UpdateUserProfileRequest(BaseModel):
+    username: Optional[str] = None
+    age: Optional[int] = None
+    gender: Optional[str] = None
+    height: Optional[float] = None
+    weight: Optional[float] = None
+    fitness_goals: Optional[List[str]] = None
+    constraints: Optional[Dict[str, Any]] = None
+
+
+class UpdateUserProfileResponse(BaseModel):
+    user_id: str
+    message: str
+    updated_fields: List[str]
+    updated_at: datetime
 
 
 # Update preferences

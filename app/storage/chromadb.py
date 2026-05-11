@@ -1,5 +1,14 @@
 import logging
+import os
+import posthog
+
+os.environ.setdefault("ANONYMIZED_TELEMETRY", "FALSE")
+logging.getLogger("chromadb.telemetry.product.posthog").disabled = True
+posthog.disabled = True
+posthog.capture = lambda *args, **kwargs: None
+
 import chromadb
+from chromadb.config import Settings as ChromaSettings
 from chromadb.utils.embedding_functions import DefaultEmbeddingFunction
 from typing import List, Dict, Any, Optional
 from app.config import get_settings
@@ -10,7 +19,11 @@ logger = logging.getLogger(__name__)
 class ChromaDBClient:
     def __init__(self):
         settings = get_settings()
-        self.client = chromadb.PersistentClient(path=settings.chroma_path)
+        chromadb.configure(anonymized_telemetry=False)
+        self.client = chromadb.PersistentClient(
+            path=settings.chroma_path,
+            settings=ChromaSettings(anonymized_telemetry=False)
+        )
         self.embedding_fn = DefaultEmbeddingFunction()
 
     def get_collection_name(self, user_id: str) -> str:
@@ -39,9 +52,14 @@ class ChromaDBClient:
     def search(self, user_id: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
         try:
             collection = self.get_collection(user_id)
+            collection_size = collection.count()
+            if collection_size == 0:
+                logger.info(f"[ChromaDB] search skipped user_id={user_id} query={query[:30]} results=0")
+                return {"documents": [[]], "metadatas": [[]], "ids": [[]], "distances": [[]]}
+
             results = collection.query(
                 query_texts=[query],
-                n_results=n_results,
+                n_results=min(n_results, collection_size),
                 where={"user_id": user_id}
             )
             logger.info(f"[ChromaDB] search user_id={user_id} query={query[:30]} results={len(results.get('documents', [[]])[0])}")

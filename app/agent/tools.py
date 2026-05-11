@@ -26,9 +26,7 @@ def get_llm():
     return get_llm._llm
 
 
-@tool
-def get_user_profile(user_id: str) -> Dict[str, Any]:
-    """获取用户基本信息和偏好，包括年龄、性别、身高、体重、健身目标、运动偏好、饮食偏好等"""
+def fetch_user_profile(user_id: str) -> Dict[str, Any]:
     logger.info(f"[Tool] get_user_profile called for user_id={user_id}")
     try:
         user = mysql_client.get_user(user_id)
@@ -83,8 +81,12 @@ def get_user_profile(user_id: str) -> Dict[str, Any]:
 
 
 @tool
-def search_exercise_history(user_id: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
-    """搜索用户的历史运动记录，返回与查询相关的运动记录"""
+def get_user_profile(user_id: str) -> Dict[str, Any]:
+    """获取用户基本信息和偏好，包括年龄、性别、身高、体重、健身目标、运动偏好、饮食偏好等"""
+    return fetch_user_profile(user_id)
+
+
+def fetch_exercise_history(user_id: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
     logger.info(f"[Tool] search_exercise_history called user_id={user_id} query={query[:50]}")
     try:
         results = long_term_memory.search_exercise_history(user_id, query, n_results)
@@ -96,8 +98,12 @@ def search_exercise_history(user_id: str, query: str, n_results: int = 5) -> Lis
 
 
 @tool
-def search_diet_history(user_id: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
-    """搜索用户的历史饮食记录，返回与查询相关的饮食记录"""
+def search_exercise_history(user_id: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
+    """搜索用户的历史运动记录，返回与查询相关的运动记录"""
+    return fetch_exercise_history(user_id, query, n_results)
+
+
+def fetch_diet_history(user_id: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
     logger.info(f"[Tool] search_diet_history called user_id={user_id} query={query[:50]}")
     try:
         results = long_term_memory.search_diet_history(user_id, query, n_results)
@@ -109,8 +115,12 @@ def search_diet_history(user_id: str, query: str, n_results: int = 5) -> List[Di
 
 
 @tool
-def get_recovery_status(user_id: str) -> Dict[str, Any]:
-    """获取用户当前的恢复状态，基于最近几次运动记录分析"""
+def search_diet_history(user_id: str, query: str, n_results: int = 5) -> List[Dict[str, Any]]:
+    """搜索用户的历史饮食记录，返回与查询相关的饮食记录"""
+    return fetch_diet_history(user_id, query, n_results)
+
+
+def fetch_recovery_status(user_id: str) -> Dict[str, Any]:
     logger.info(f"[Tool] get_recovery_status called user_id={user_id}")
     try:
         records = mysql_client.get_exercise_records(user_id, limit=3)
@@ -146,8 +156,12 @@ def get_recovery_status(user_id: str) -> Dict[str, Any]:
 
 
 @tool
-def calculate_recommended_calories(user_id: str) -> Dict[str, Any]:
-    """根据用户的身体数据（体重、身高、年龄、性别）和健身目标，计算每日推荐的卡路里摄入量"""
+def get_recovery_status(user_id: str) -> Dict[str, Any]:
+    """获取用户当前的恢复状态，基于最近几次运动记录分析"""
+    return fetch_recovery_status(user_id)
+
+
+def fetch_recommended_calories(user_id: str) -> Dict[str, Any]:
     logger.info(f"[Tool] calculate_recommended_calories called user_id={user_id}")
     try:
         user = mysql_client.get_user(user_id)
@@ -189,11 +203,15 @@ def calculate_recommended_calories(user_id: str) -> Dict[str, Any]:
 
 
 @tool
-def generate_exercise_plan(user_id: str, intensity: int = 5, duration: int = 30) -> Dict[str, Any]:
-    """根据指定的运动强度和时长生成运动计划，包含运动类型、时长、强度和原因"""
+def calculate_recommended_calories(user_id: str) -> Dict[str, Any]:
+    """根据用户的身体数据（体重、身高、年龄、性别）和健身目标，计算每日推荐的卡路里摄入量"""
+    return fetch_recommended_calories(user_id)
+
+
+def build_exercise_plan(user_id: str, intensity: int = 5, duration: int = 30) -> Dict[str, Any]:
     logger.info(f"[Tool] generate_exercise_plan called user_id={user_id} intensity={intensity}")
     try:
-        recovery = get_recovery_status(user_id)
+        recovery = fetch_recovery_status(user_id)
 
         exercise_types = {
             1: {"type": "walking", "duration": 20, "intensity": 1, "reason": "极轻度活动，促进血液循环"},
@@ -225,11 +243,15 @@ def generate_exercise_plan(user_id: str, intensity: int = 5, duration: int = 30)
 
 
 @tool
-def generate_diet_recommendation(user_id: str, meal_type: str = "general") -> Dict[str, Any]:
-    """根据用户的目标卡路里生成饮食建议，可以指定某一餐或返回全天的饮食建议"""
+def generate_exercise_plan(user_id: str, intensity: int = 5, duration: int = 30) -> Dict[str, Any]:
+    """根据指定的运动强度和时长生成运动计划，包含运动类型、时长、强度和原因"""
+    return build_exercise_plan(user_id, intensity, duration)
+
+
+def build_diet_recommendation(user_id: str, meal_type: str = "general") -> Dict[str, Any]:
     logger.info(f"[Tool] generate_diet_recommendation called user_id={user_id} meal_type={meal_type}")
     try:
-        calories_info = calculate_recommended_calories(user_id)
+        calories_info = fetch_recommended_calories(user_id)
         target = calories_info.get("recommended_calories", 2000)
 
         recommendations = {
@@ -271,6 +293,12 @@ def generate_diet_recommendation(user_id: str, meal_type: str = "general") -> Di
     except Exception as e:
         logger.error(f"[Tool] generate_diet_recommendation error user_id={user_id} error={e}")
         raise
+
+
+@tool
+def generate_diet_recommendation(user_id: str, meal_type: str = "general") -> Dict[str, Any]:
+    """根据用户的目标卡路里生成饮食建议，可以指定某一餐或返回全天的饮食建议"""
+    return build_diet_recommendation(user_id, meal_type)
 
 
 # Available tools list for binding to LLM

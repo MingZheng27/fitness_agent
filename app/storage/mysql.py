@@ -128,6 +128,36 @@ class MySQLClient:
         cursor.close()
         return result
 
+    def update_user(self, user_id: str, username: Optional[str], age: Optional[int],
+                    gender: Optional[str], height: Optional[float], weight: Optional[float],
+                    fitness_goals: Optional[List[str]], constraints: Optional[Dict[str, Any]]) -> bool:
+        conn = self.get_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            UPDATE users
+            SET username = COALESCE(%s, username),
+                age = COALESCE(%s, age),
+                gender = COALESCE(%s, gender),
+                height = COALESCE(%s, height),
+                weight = COALESCE(%s, weight),
+                fitness_goals = COALESCE(%s, fitness_goals),
+                constraints = COALESCE(%s, constraints)
+            WHERE id = %s
+        """, (
+            username,
+            age,
+            gender,
+            height,
+            weight,
+            json.dumps(fitness_goals) if fitness_goals is not None else None,
+            json.dumps(constraints) if constraints is not None else None,
+            user_id
+        ))
+        conn.commit()
+        updated = cursor.rowcount > 0
+        cursor.close()
+        return updated
+
     def create_exercise_record(self, user_id: str, date: str, exercise_type: str,
                                duration_minutes: int, intensity: int, calories_burned: int,
                                recovery_status: str, notes: str) -> str:
